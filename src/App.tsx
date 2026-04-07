@@ -108,6 +108,8 @@ function App() {
   const [success, setSuccess] = useState<string | null>(null)
   const [registroError, setRegistroError] = useState<string | null>(null)
   const [registroSuccess, setRegistroSuccess] = useState<string | null>(null)
+  const [registroFiltro, setRegistroFiltro] = useState<'hoje' | 'semana' | 'todos'>('todos')
+  const [registroCategoriaFiltro, setRegistroCategoriaFiltro] = useState<string>('todas')
   const [form, setForm] = useState({
     nome: '',
     data_nascimento: '',
@@ -167,12 +169,37 @@ function App() {
     void loadBebes()
   }, [])
 
-  async function loadRegistros(bebeId: string) {
+  async function loadRegistros(
+    bebeId: string,
+    options?: {
+      filtro?: 'hoje' | 'semana' | 'todos'
+      categoria?: string
+    },
+  ) {
     setLoadingRegistros(true)
     setRegistroError(null)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/bebes/${bebeId}/registros`)
+      const filtroAtual = options?.filtro ?? registroFiltro
+      const categoriaAtual = options?.categoria ?? registroCategoriaFiltro
+      const query = new URLSearchParams()
+
+      if (filtroAtual === 'hoje') {
+        query.set('data', new Date().toISOString().slice(0, 10))
+      }
+
+      if (filtroAtual === 'semana') {
+        query.set('semana_atual', 'true')
+      }
+
+      if (categoriaAtual !== 'todas') {
+        query.set('categoria', categoriaAtual)
+      }
+
+      const url = `${API_BASE_URL}/api/bebes/${bebeId}/registros${
+        query.toString() ? `?${query.toString()}` : ''
+      }`
+      const response = await fetch(url)
       if (!response.ok) {
         throw new Error('Não foi possível carregar os registros alimentares.')
       }
@@ -195,7 +222,7 @@ function App() {
     }
 
     void loadRegistros(activeBabyId)
-  }, [activeBabyId])
+  }, [activeBabyId, registroFiltro, registroCategoriaFiltro])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -318,11 +345,45 @@ function App() {
     }
   }
 
+  async function handleDeleteRegistro(registroId: string) {
+    if (!activeBabyId) {
+      return
+    }
+
+    setRegistroError(null)
+    setRegistroSuccess(null)
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/bebes/${activeBabyId}/registros/${registroId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.detail ?? 'Não foi possível remover o registro.')
+      }
+
+      setRegistroSuccess('Registro removido com sucesso.')
+      await loadRegistros(activeBabyId)
+    } catch (err) {
+      setRegistroError(err instanceof Error ? err.message : 'Falha ao remover o registro.')
+    }
+  }
+
   const activeBaby = activeBabyId ? bebes.find((bebe) => bebe.id === activeBabyId) ?? null : null
   const activeDisplay = activeBaby ? displayMap[activeBaby.id] : null
   const registrosHoje = registros.filter(
     (registro) => registro.data === new Date().toISOString().slice(0, 10),
   )
+  const alimentosRepetidos = Object.entries(
+    registros.reduce<Record<string, number>>((acc, registro) => {
+      const key = registro.nome_alimento.trim().toLowerCase()
+      acc[key] = (acc[key] ?? 0) + 1
+      return acc
+    }, {}),
+  )
+    .filter(([, total]) => total >= 2)
+    .map(([nome, total]) => `${nome} (${total}x)`)
 
   return (
     <main className="app-shell">
@@ -697,6 +758,49 @@ function App() {
             ) : null}
           </div>
 
+          {activeBaby ? (
+            <div className="history-filters">
+              <div className="filter-pills">
+                <button
+                  className={`filter-pill ${registroFiltro === 'todos' ? 'is-selected' : ''}`}
+                  onClick={() => setRegistroFiltro('todos')}
+                  type="button"
+                >
+                  Tudo
+                </button>
+                <button
+                  className={`filter-pill ${registroFiltro === 'hoje' ? 'is-selected' : ''}`}
+                  onClick={() => setRegistroFiltro('hoje')}
+                  type="button"
+                >
+                  Hoje
+                </button>
+                <button
+                  className={`filter-pill ${registroFiltro === 'semana' ? 'is-selected' : ''}`}
+                  onClick={() => setRegistroFiltro('semana')}
+                  type="button"
+                >
+                  Semana atual
+                </button>
+              </div>
+
+              <label className="history-select">
+                <span>Categoria</span>
+                <select
+                  value={registroCategoriaFiltro}
+                  onChange={(event) => setRegistroCategoriaFiltro(event.target.value)}
+                >
+                  <option value="todas">Todas</option>
+                  {categoriaOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
+
           {activeDisplay ? (
             <div className="registro-summary">
               <div className="summary-pill">
@@ -711,6 +815,13 @@ function App() {
                 <span>Fase atual</span>
                 <strong>{faseLabels[activeDisplay.fase_alimentar]}</strong>
               </div>
+            </div>
+          ) : null}
+
+          {activeBaby && alimentosRepetidos.length ? (
+            <div className="rule-three-panel">
+              <strong>Observando a semana</strong>
+              <p>Alimentos repetidos nesta visão: {alimentosRepetidos.join(', ')}.</p>
             </div>
           ) : null}
 
@@ -762,6 +873,16 @@ function App() {
                 </div>
 
                 {registro.notas ? <p className="registro-notes">{registro.notas}</p> : null}
+
+                <div className="registro-actions">
+                  <button
+                    className="danger-action baby-action"
+                    onClick={() => void handleDeleteRegistro(registro.id)}
+                    type="button"
+                  >
+                    Remover registro
+                  </button>
+                </div>
               </article>
             ))}
           </div>

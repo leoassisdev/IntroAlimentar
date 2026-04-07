@@ -22,6 +22,21 @@ class RegistroAlimentarService:
     def list(self, bebe_id: str):
         return self.repo.list_by_bebe(bebe_id)
 
+    def list_filtered(
+        self,
+        bebe_id: str,
+        target_date: date | None = None,
+        categoria: str | None = None,
+        semana_atual: bool = False,
+    ):
+        if semana_atual:
+            return self.alimentos_semana_atual(bebe_id)
+        if target_date:
+            return self.repo.list_by_date(bebe_id, target_date)
+        if categoria:
+            return self.repo.list_by_category(bebe_id, categoria)
+        return self.list(bebe_id)
+
     def get(self, bebe_id: str, registro_id: str):
         registro = self.repo.get_by_id(registro_id)
         if not registro or registro.bebe_id != bebe_id:

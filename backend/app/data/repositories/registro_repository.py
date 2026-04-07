@@ -32,11 +32,18 @@ class RegistroAlimentarRepository:
         )
         return [self._to_entity(model) for model in models]
 
+    def list_by_date(self, bebe_id: str, target_date) -> list[RegistroAlimentar]:
+        return [registro for registro in self.list_by_bebe(bebe_id) if registro.data == target_date]
+
+    def list_by_category(self, bebe_id: str, categoria: str) -> list[RegistroAlimentar]:
+        return [registro for registro in self.list_by_bebe(bebe_id) if registro.categoria == categoria]
+
     def list_by_week(self, bebe_id: str, year: int, week: int) -> list[RegistroAlimentar]:
         registros = self.list_by_bebe(bebe_id)
         return [
-          registro for registro in registros
-          if registro.data.isocalendar().year == year and registro.data.isocalendar().week == week
+            registro
+            for registro in registros
+            if registro.data.isocalendar().year == year and registro.data.isocalendar().week == week
         ]
 
     def update(self, registro: RegistroAlimentar) -> RegistroAlimentar | None:

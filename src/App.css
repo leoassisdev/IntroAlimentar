@@ -433,6 +433,70 @@
   gap: 12px;
 }
 
+.history-filters {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filter-pill {
+  border: none;
+  border-radius: 999px;
+  padding: 11px 14px;
+  background: rgba(245, 241, 255, 0.95);
+  color: #685d7f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.filter-pill.is-selected {
+  background: linear-gradient(135deg, #ff8eb3, #ffb66e);
+  color: #fff;
+  box-shadow: 0 14px 24px rgba(255, 142, 179, 0.18);
+}
+
+.history-select {
+  display: grid;
+  gap: 8px;
+  color: #685d7f;
+  font-weight: 700;
+}
+
+.history-select select {
+  min-width: 180px;
+  border: 1px solid rgba(208, 198, 230, 1);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(252, 250, 255, 0.96);
+  color: #4b3d61;
+}
+
+.rule-three-panel {
+  margin-top: 16px;
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255, 239, 230, 0.9), rgba(255, 247, 242, 0.95));
+}
+
+.rule-three-panel strong {
+  display: block;
+  color: #5f476b;
+  margin-bottom: 8px;
+}
+
+.rule-three-panel p {
+  color: #6d6483;
+}
+
 .registro-list {
   margin-top: 18px;
   display: grid;
@@ -484,6 +548,12 @@
   margin-top: 14px;
   color: #6d6483;
   line-height: 1.5;
+}
+
+.registro-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .baby-action {
@@ -593,6 +663,10 @@
   .form-grid,
   .registro-summary {
     grid-template-columns: 1fr;
+  }
+
+  .history-filters {
+    align-items: stretch;
   }
 
   .brand-block {

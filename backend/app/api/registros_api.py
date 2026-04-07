@@ -1,5 +1,7 @@
 """API de registros alimentares."""
 
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -37,9 +39,28 @@ def create(
 @router.get("", response_model=list[RegistroAlimentarResponse])
 def list_all(
     bebe_id: str,
+    data: date | None = None,
+    categoria: str | None = None,
+    semana_atual: bool = False,
     service: RegistroAlimentarService = Depends(get_service),
 ) -> list[RegistroAlimentarResponse]:
-    return [RegistroAlimentarMapper.to_public(item) for item in service.list(bebe_id)]
+    return [
+        RegistroAlimentarMapper.to_public(item)
+        for item in service.list_filtered(
+            bebe_id,
+            target_date=data,
+            categoria=categoria,
+            semana_atual=semana_atual,
+        )
+    ]
+
+
+@router.get("/semana-atual", response_model=list[RegistroAlimentarResponse])
+def semana_atual(
+    bebe_id: str,
+    service: RegistroAlimentarService = Depends(get_service),
+) -> list[RegistroAlimentarResponse]:
+    return [RegistroAlimentarMapper.to_public(item) for item in service.alimentos_semana_atual(bebe_id)]
 
 
 @router.get("/{registro_id}", response_model=RegistroAlimentarResponse)
@@ -79,11 +100,3 @@ def delete(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return {"message": "Registro deletado com sucesso"}
-
-
-@router.get("/semana-atual", response_model=list[RegistroAlimentarResponse])
-def semana_atual(
-    bebe_id: str,
-    service: RegistroAlimentarService = Depends(get_service),
-) -> list[RegistroAlimentarResponse]:
-    return [RegistroAlimentarMapper.to_public(item) for item in service.alimentos_semana_atual(bebe_id)]
