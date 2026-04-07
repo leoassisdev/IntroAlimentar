@@ -12,22 +12,23 @@ class BebeService:
     def __init__(self, repo) -> None:
         self.repo = repo
 
-    def criar(self, dto: CreateBebeRequest):
+    def create(self, dto: CreateBebeRequest):
         bebe = BebeFactory.make_bebe(dto)
-        return self.repo.create(bebe)
+        return self.repo.save(bebe)
 
-    def listar(self, offset: int, limit: int):
-        return self.repo.list(offset=offset, limit=limit)
-
-    def buscar_por_id(self, bebe_id: str):
+    def get(self, bebe_id: str):
         return self.repo.get_by_id(bebe_id)
 
-    def atualizar(self, bebe_id: str, dto: UpdateBebeRequest):
-        atual = self.repo.get_by_id(bebe_id)
-        if atual is None:
-            return None
-        atualizado = atual.aplicar_atualizacao_from_any(dto)
-        return self.repo.update(atualizado)
+    def list(self):
+        return self.repo.list_all()
 
-    def deletar(self, bebe_id: str):
+    def update(self, bebe_id: str, dto: UpdateBebeRequest):
+        bebe = self.repo.get_by_id(bebe_id)
+        if not bebe:
+            raise ValueError("Bebê não encontrado")
+
+        bebe.aplicar_atualizacao_from_any(dto.model_dump(exclude_unset=True))
+        return self.repo.update(bebe)
+
+    def delete(self, bebe_id: str):
         return self.repo.soft_delete(bebe_id)

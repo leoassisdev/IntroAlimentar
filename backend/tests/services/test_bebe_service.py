@@ -8,14 +8,14 @@ class InMemoryRepo:
     def __init__(self) -> None:
         self.items = []
 
-    def create(self, bebe):
+    def save(self, bebe):
         self.items.append(bebe)
         return bebe
 
 
 def test_service_cria_bebe() -> None:
     service = BebeService(repo=InMemoryRepo())
-    bebe = service.criar(
+    bebe = service.create(
         CreateBebeRequest(
             nome="Theo",
             data_nascimento=date(2024, 8, 20),

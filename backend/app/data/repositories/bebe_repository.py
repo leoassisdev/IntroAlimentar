@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.data.models.bebe_model import BebeModel
@@ -15,19 +14,16 @@ class BebeRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create(self, bebe: Bebe) -> Bebe:
+    def save(self, bebe: Bebe) -> Bebe:
         model = self._to_model(bebe)
         self.db.add(model)
         self.db.commit()
         self.db.refresh(model)
         return self._to_entity(model)
 
-    def list(self, offset: int, limit: int) -> tuple[list[Bebe], int]:
-        total = self.db.scalar(select(func.count()).select_from(BebeModel)) or 0
-        models = self.db.scalars(
-            select(BebeModel).order_by(BebeModel.created_at.desc()).offset(offset).limit(limit)
-        ).all()
-        return [self._to_entity(model) for model in models], total
+    def list_all(self) -> list[Bebe]:
+        models = self.db.query(BebeModel).filter_by(ativo=True).all()
+        return [self._to_entity(model) for model in models]
 
     def get_by_id(self, bebe_id: str) -> Bebe | None:
         model = self.db.get(BebeModel, bebe_id)
@@ -36,48 +32,30 @@ class BebeRepository:
         return self._to_entity(model)
 
     def update(self, bebe: Bebe) -> Bebe:
-        model = self.db.get(BebeModel, bebe.id)
-        if model is None:
-            raise ValueError("Bebe nao encontrado para atualizacao.")
-
-        updated_model = self._to_model(bebe)
-        for field in (
-            "nome",
-            "data_nascimento",
-            "genero",
-            "foto",
-            "ativo",
-            "created_at",
-            "updated_at",
-        ):
-            setattr(model, field, getattr(updated_model, field))
-
-        self.db.add(model)
-        self.db.commit()
-        self.db.refresh(model)
-        return self._to_entity(model)
-
-    def soft_delete(self, bebe_id: str) -> Bebe | None:
-        model = self.db.get(BebeModel, bebe_id)
+        model = self.db.query(BebeModel).filter_by(id=bebe.id).first()
         if model is None:
             return None
-        model.ativo = False
-        self.db.add(model)
+
+        for attr, value in bebe.__dict__.items():
+            setattr(model, attr, value)
+
         self.db.commit()
         self.db.refresh(model)
         return self._to_entity(model)
 
+    def soft_delete(self, bebe_id: str) -> None:
+        model = self.db.query(BebeModel).filter_by(id=bebe_id).first()
+        if model:
+            model.ativo = False
+            self.db.commit()
+
     def _to_entity(self, model: BebeModel) -> Bebe:
-        return Bebe(
-            id=model.id,
-            nome=model.nome,
-            data_nascimento=model.data_nascimento,
-            genero=model.genero,
-            foto=model.foto,
-            ativo=model.ativo,
-            created_at=model.created_at,
-            updated_at=model.updated_at,
-        )
+        payload = {
+            key: value
+            for key, value in model.__dict__.items()
+            if not key.startswith("_")
+        }
+        return Bebe(**payload)
 
     def _to_model(self, bebe: Bebe) -> BebeModel:
         return BebeModel(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -10,7 +10,7 @@ from typing import Any
 VALID_GENEROS = {"masculino", "feminino", "outro"}
 
 
-@dataclass(frozen=True)
+@dataclass
 class Bebe:
     """Entidade de dominio que representa um bebe."""
 
@@ -37,18 +37,10 @@ class Bebe:
     def idade_em_meses(self, referencia: date | None = None) -> int:
         """Calcula a idade atual em meses."""
 
-        base = referencia or date.today()
-        if self.data_nascimento > base:
-            return 0
-
-        anos = base.year - self.data_nascimento.year
-        meses = base.month - self.data_nascimento.month
-        total = anos * 12 + meses
-
-        if base.day < self.data_nascimento.day:
-            total -= 1
-
-        return max(total, 0)
+        hoje = referencia or date.today()
+        return (hoje.year - self.data_nascimento.year) * 12 + (
+            hoje.month - self.data_nascimento.month
+        )
 
     def fase_alimentar(self, referencia: date | None = None) -> str:
         """Determina a fase alimentar do bebe."""
@@ -60,9 +52,9 @@ class Bebe:
             return "intermediario"
         if 9 < idade < 12:
             return "avancado"
-        if idade >= 12:
+        if idade > 12:
             return "familia"
-        return "pre-introducao"
+        return "antes_da_introducao"
 
     @staticmethod
     def _get(data: Any, field_name: str, default: Any = None) -> Any:
@@ -72,16 +64,14 @@ class Bebe:
             return data.get(field_name, default)
         return getattr(data, field_name, default)
 
-    def aplicar_atualizacao_from_any(self, data: Any) -> "Bebe":
+    def aplicar_atualizacao_from_any(self, data: Any) -> None:
         """Aplica atualizacao a partir de dict, DTO ou objeto simples."""
 
-        agora = datetime.now(UTC)
-        return replace(
-            self,
-            nome=self._get(data, "nome", self.nome),
-            data_nascimento=self._get(data, "data_nascimento", self.data_nascimento),
-            genero=self._get(data, "genero", self.genero),
-            foto=self._get(data, "foto", self.foto),
-            ativo=self._get(data, "ativo", self.ativo),
-            updated_at=agora,
+        payload = data if isinstance(data, dict) else getattr(data, "model_dump", lambda **_: {})(
+            exclude_unset=True
         )
+        for key, value in payload.items():
+            if hasattr(self, key) and value is not None:
+                setattr(self, key, value)
+
+        self.updated_at = datetime.now(UTC)

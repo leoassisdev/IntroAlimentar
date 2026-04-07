@@ -1,0 +1,1 @@
+"""Payloads placeholder de registros."""
