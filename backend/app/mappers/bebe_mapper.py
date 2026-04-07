@@ -1,14 +1,13 @@
-"""Mapper da entidade Bebe para DTOs de resposta."""
-
 from app.domain.bebes.bebe_entity import Bebe
-from app.schemas.bebes.responses import BebeDisplayResponse, BebeResponse
+from app.schemas.bebes.responses import BebeResponse, BebeDisplayResponse
 
 
 class BebeMapper:
-    """Converte entidade para respostas HTTP."""
+    """Mapper — converte Entity para Response DTOs. Chamado apenas na API."""
 
     @staticmethod
     def to_public(entity: Bebe) -> BebeResponse:
+        """Converte para response pública completa."""
         return BebeResponse(
             id=entity.id,
             nome=entity.nome,
@@ -22,6 +21,7 @@ class BebeMapper:
 
     @staticmethod
     def to_display(entity: Bebe) -> BebeDisplayResponse:
+        """Converte para response simplificada (nome + idade + fase)."""
         return BebeDisplayResponse(
             id=entity.id,
             nome=entity.nome,

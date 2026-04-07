@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 __pycache__/
 *.py[cod]
+
+# Electron build output
+release/
+*.dmg
+*.exe
+*.blockmap

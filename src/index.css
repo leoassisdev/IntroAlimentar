@@ -1,50 +1,571 @@
-:root {
-  font-family: 'Nunito', 'Avenir Next', 'Segoe UI', sans-serif;
-  line-height: 1.5;
-  font-weight: 500;
-  color: #5f5673;
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Baloo+2:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Paleta infantil vibrante */
+    --background: 40 50% 97%;
+    --foreground: 220 30% 18%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 18%;
+
+    /* Rosa coral */
+    --primary: 354 100% 80%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Teal */
+    --secondary: 172 68% 64%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Azul céu */
+    --accent: 203 90% 73%;
+    --accent-foreground: 0 0% 100%;
+
+    --muted: 35 25% 93%;
+    --muted-foreground: 220 10% 45%;
+
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
+    --ring: 354 100% 80%;
+
+    --radius: 1rem;
+
+    /* Cores extras infantis */
+    --yellow: 45 95% 68%;
+    --purple: 260 60% 75%;
+    --green: 150 50% 55%;
+    --orange: 25 95% 60%;
+    --pink-light: 340 80% 92%;
+    --teal-light: 172 50% 92%;
+    --blue-light: 203 70% 92%;
+    --yellow-light: 45 80% 92%;
+
+    /* 3D button tokens */
+    --btn-3d-bg: 340 80% 97%;
+    --btn-3d-border: 330 25% 55%;
+    --btn-3d-shadow: 340 80% 92%;
+    --btn-3d-hover: 340 70% 95%;
+
+    --sidebar-background: 354 40% 97%;
+    --sidebar-foreground: 220 30% 18%;
+    --sidebar-primary: 354 100% 80%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 354 30% 94%;
+    --sidebar-accent-foreground: 220 30% 18%;
+    --sidebar-border: 35 20% 88%;
+    --sidebar-ring: 354 100% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Nunito', sans-serif;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Baloo 2', 'Nunito', cursive;
+    letter-spacing: -0.01em;
+  }
+}
+
+/* =======================================
+   GRADIENT BACKGROUND — estilo Uiverse kencode7
+   Adaptado com cores infantis (rosa→teal)
+   ======================================= */
+
+.gradient-bg {
+  position: relative;
+  min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(255, 214, 226, 0.65), transparent 32%),
-    radial-gradient(circle at top right, rgba(213, 237, 255, 0.75), transparent 28%),
-    linear-gradient(180deg, #fff8fc 0%, #fffdf8 42%, #f9f6ff 100%);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    linear-gradient(
+      to bottom,
+      hsl(var(--background)) 0%,
+      hsl(var(--background)) 35%,
+      hsla(var(--background) / 0) 100%
+    ),
+    linear-gradient(to right, hsl(var(--secondary)), hsl(var(--primary)), hsl(var(--purple)));
+  overflow: hidden;
 }
 
-* {
-  box-sizing: border-box;
+.gradient-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(90deg, hsl(var(--border) / 0.4) 1px, transparent 1px);
+  background-size: 60px 100%;
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 50%);
 }
 
-html {
-  scroll-behavior: smooth;
+/* Paint blobs overlay */
+.paint-blob-yellow {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  width: 35%;
+  height: 35%;
+  background: radial-gradient(ellipse at center, hsl(var(--yellow) / 0.08) 0%, transparent 60%);
+  border-radius: 50% 60% 40% 70% / 60% 40% 70% 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: blob-float 18s ease-in-out infinite 5s;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
+.paint-blob-purple {
+  position: fixed;
+  bottom: 20%;
+  right: 5%;
+  width: 30%;
+  height: 30%;
+  background: radial-gradient(ellipse at center, hsl(var(--purple) / 0.07) 0%, transparent 60%);
+  border-radius: 70% 30% 50% 50% / 40% 70% 30% 60%;
+  z-index: 0;
+  pointer-events: none;
+  animation: blob-float 22s ease-in-out infinite 3s;
 }
 
-a {
-  color: inherit;
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  25% { transform: translate(2%, -3%) rotate(5deg) scale(1.05); }
+  50% { transform: translate(-1%, 2%) rotate(-3deg) scale(0.98); }
+  75% { transform: translate(3%, 1%) rotate(4deg) scale(1.03); }
 }
 
-button,
-input,
-textarea,
-select {
-  font: inherit;
+/* =======================================
+   3D PUSH BUTTON — estilo Uiverse Madflows
+   ======================================= */
+
+.btn-3d {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  outline: none;
+  border: 0;
+  vertical-align: middle;
+  text-decoration: none;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: hsl(var(--foreground));
+  text-transform: uppercase;
+  padding: 1em 1.8em;
+  background: hsl(var(--btn-3d-bg));
+  border: 2px solid hsl(var(--btn-3d-border));
+  border-radius: 0.75em;
+  transform-style: preserve-3d;
+  transition: transform 150ms cubic-bezier(0, 0, 0.58, 1), background 150ms cubic-bezier(0, 0, 0.58, 1);
 }
 
-#root {
-  min-height: 100vh;
+.btn-3d::before {
+  position: absolute;
+  content: '';
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: hsl(var(--primary) / 0.35);
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px hsl(var(--btn-3d-border)), 0 0.625em 0 0 hsl(var(--btn-3d-shadow));
+  transform: translate3d(0, 0.75em, -1em);
+  transition: transform 150ms cubic-bezier(0, 0, 0.58, 1), box-shadow 150ms cubic-bezier(0, 0, 0.58, 1);
 }
 
-h1,
-h2,
-h3,
-p {
-  margin: 0;
+.btn-3d:hover {
+  background: hsl(var(--btn-3d-hover));
+  transform: translate(0, 0.25em);
+}
+
+.btn-3d:hover::before {
+  box-shadow: 0 0 0 2px hsl(var(--btn-3d-border)), 0 0.5em 0 0 hsl(var(--btn-3d-shadow));
+  transform: translate3d(0, 0.5em, -1em);
+}
+
+.btn-3d:active {
+  background: hsl(var(--btn-3d-hover));
+  transform: translate(0, 0.75em);
+}
+
+.btn-3d:active::before {
+  box-shadow: 0 0 0 2px hsl(var(--btn-3d-border)), 0 0 hsl(var(--btn-3d-shadow));
+  transform: translate3d(0, 0, -1em);
+}
+
+/* Variant: primary color */
+.btn-3d-primary {
+  background: hsl(var(--primary) / 0.15);
+  border-color: hsl(var(--primary) / 0.6);
+  color: hsl(var(--foreground));
+}
+.btn-3d-primary::before {
+  background: hsl(var(--primary) / 0.3);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.6), 0 0.625em 0 0 hsl(var(--pink-light));
+}
+.btn-3d-primary:hover { background: hsl(var(--primary) / 0.2); }
+.btn-3d-primary:hover::before {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.6), 0 0.5em 0 0 hsl(var(--pink-light));
+}
+.btn-3d-primary:active::before {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.6), 0 0 hsl(var(--pink-light));
+}
+
+/* Variant: secondary (teal) */
+.btn-3d-secondary {
+  background: hsl(var(--secondary) / 0.15);
+  border-color: hsl(var(--secondary) / 0.6);
+}
+.btn-3d-secondary::before {
+  background: hsl(var(--secondary) / 0.3);
+  box-shadow: 0 0 0 2px hsl(var(--secondary) / 0.6), 0 0.625em 0 0 hsl(var(--teal-light));
+}
+.btn-3d-secondary:hover { background: hsl(var(--secondary) / 0.2); }
+.btn-3d-secondary:hover::before {
+  box-shadow: 0 0 0 2px hsl(var(--secondary) / 0.6), 0 0.5em 0 0 hsl(var(--teal-light));
+}
+.btn-3d-secondary:active::before {
+  box-shadow: 0 0 0 2px hsl(var(--secondary) / 0.6), 0 0 hsl(var(--teal-light));
+}
+
+/* =======================================
+   3D ROTATING CAROUSEL — estilo Uiverse ilkhoeri
+   ======================================= */
+
+.carousel-3d-wrapper {
+  width: 100%;
+  height: 220px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  perspective: 1000px;
+}
+
+.carousel-3d-inner {
+  --w: 80px;
+  --h: 80px;
+  --translateZ: 180px;
+  --rotateX: -12deg;
+  position: absolute;
+  width: var(--w);
+  height: var(--h);
+  transform-style: preserve-3d;
+  animation: carousel-rotate 25s linear infinite;
+}
+
+@keyframes carousel-rotate {
+  from { transform: perspective(1000px) rotateX(var(--rotateX)) rotateY(0); }
+  to { transform: perspective(1000px) rotateX(var(--rotateX)) rotateY(1turn); }
+}
+
+.carousel-3d-card {
+  position: absolute;
+  border: 2px solid hsl(var(--primary) / 0.3);
+  border-radius: 16px;
+  overflow: hidden;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    circle,
+    hsl(var(--card) / 0.9) 0%,
+    hsl(var(--primary) / 0.1) 80%,
+    hsl(var(--secondary) / 0.15) 100%
+  );
+  box-shadow: 0 4px 15px hsl(var(--primary) / 0.1);
+  font-size: 2.5rem;
+  backdrop-filter: blur(4px);
+}
+
+/* =======================================
+   GRADIENT CHECKBOX — estilo Uiverse hatim_6360
+   ======================================= */
+
+.checkbox-gradient {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox-gradient input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.checkbox-gradient .check-box {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--purple));
+  transition: all 300ms ease-in-out;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.checkbox-gradient .check-box::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cG9seWxpbmUgcG9pbnRzPSIyMCA2IDkgMTcgNCAxMiI+PC9wb2x5bGluZT48L3N2Zz4=');
+  background-size: contain;
+  background-repeat: no-repeat;
+  transition: opacity 300ms;
+}
+
+.checkbox-gradient input:checked + .check-box {
+  background: linear-gradient(135deg, hsl(var(--purple)), hsl(var(--primary)));
+  border-color: transparent;
+  transform: rotate(12deg);
+  box-shadow: 0 0 15px hsl(var(--purple) / 0.4);
+}
+
+.checkbox-gradient input:checked + .check-box::after {
+  opacity: 1;
+}
+
+.checkbox-gradient:hover .check-box {
+  box-shadow: 0 0 15px hsl(var(--purple) / 0.3);
+}
+
+/* =======================================
+   SOCIAL MEDIA BUTTONS — estilo Uiverse Zameerahmad01
+   ======================================= */
+
+.social-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.social-btn {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: hsl(var(--muted-foreground));
+  background-color: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  transition: all 300ms ease-in-out;
+  cursor: pointer;
+}
+
+.social-btn:hover {
+  box-shadow: 3px 2px 30px 0px hsl(var(--foreground) / 0.08);
+  color: white;
+  border-color: transparent;
+}
+
+.social-btn svg {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+}
+
+.social-btn .filled {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  transition: all 300ms ease-in-out;
+  border-radius: 50%;
+}
+
+.social-btn:hover .filled {
+  height: 100%;
+}
+
+.social-btn[data-social="instagram"] .filled {
+  background: linear-gradient(45deg, #405de6, #5b51db, #b33ab4, #c135b4, #e1306c, #fd1f1f);
+}
+.social-btn[data-social="youtube"] .filled {
+  background-color: #ff0000;
+}
+.social-btn[data-social="github"] .filled {
+  background-color: #2b7de9;
+}
+.social-btn[data-social="website"] .filled {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--purple)));
+}
+
+.social-tooltip {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  opacity: 0;
+  visibility: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  transition: all 300ms ease;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.social-btn-wrap:hover .social-tooltip {
+  opacity: 1;
+  visibility: visible;
+  top: -30px;
+}
+
+.social-btn-wrap {
+  position: relative;
+}
+
+/* =======================================
+   PLAYFUL INTERACTIONS
+   ======================================= */
+
+.card-playful {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+}
+
+.card-playful:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: 0 12px 30px -8px hsl(var(--primary) / 0.2);
+}
+
+.bounce-tap:active {
+  transform: scale(0.95);
+  transition: transform 0.1s;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+.animate-wiggle { animation: wiggle 0.5s ease-in-out; }
+.hover-wiggle:hover { animation: wiggle 0.4s ease-in-out; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-float-delay { animation: float 3s ease-in-out infinite 1s; }
+.animate-float-delay-2 { animation: float 3s ease-in-out infinite 2s; }
+
+@keyframes pop-in {
+  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger-children > *:nth-child(8) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(9) { animation-delay: 0.45s; }
+
+.text-rainbow {
+  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--yellow)), hsl(var(--secondary)), hsl(var(--accent)), hsl(var(--purple)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.photo-upload-area {
+  border: 3px dashed hsl(var(--border));
+  border-radius: 1.5rem;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.photo-upload-area:hover {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.05);
+}
+
+.confetti-bg {
+  background-image:
+    radial-gradient(circle, hsl(var(--primary) / 0.06) 1px, transparent 1px),
+    radial-gradient(circle, hsl(var(--secondary) / 0.06) 1px, transparent 1px),
+    radial-gradient(circle, hsl(var(--yellow) / 0.06) 1px, transparent 1px);
+  background-size: 40px 40px, 60px 60px, 50px 50px;
+  background-position: 0 0, 20px 20px, 10px 30px;
+}
+
+/* Sparkle decorations */
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+
+.sparkle {
+  position: absolute;
+  pointer-events: none;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Scalloped / wavy card border */
+.card-wavy {
+  border-radius: 24px;
+  position: relative;
+}
+
+@keyframes gradient-x {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 3s ease infinite;
+}
+
+/* Success toast animation */
+.success-toast-enter {
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

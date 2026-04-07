@@ -1,27 +1,25 @@
-"""DTOs de saida do modulo de bebes."""
-
-from datetime import date, datetime
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
+from datetime import datetime, date
+from typing import Optional
 
 
 class BebeResponse(BaseModel):
-    """Resposta completa de bebe."""
+    """Response pública completa de um bebê."""
 
-    id: str = Field(..., description="Identificador do bebe.")
-    nome: str = Field(..., description="Nome do bebe.")
-    data_nascimento: date = Field(..., description="Data de nascimento.")
-    genero: str = Field(..., description="Genero.")
-    foto: str | None = Field(default=None, description="Foto em base64.")
-    ativo: bool = Field(..., description="Status logico.")
-    created_at: datetime = Field(..., description="Criado em.")
-    updated_at: datetime = Field(..., description="Atualizado em.")
- 
+    id: str
+    nome: str
+    data_nascimento: date
+    genero: str
+    foto: Optional[str]
+    ativo: bool
+    created_at: datetime
+    updated_at: datetime
+
 
 class BebeDisplayResponse(BaseModel):
-    """Resposta simplificada para display."""
+    """Response simplificada para exibição (nome + idade)."""
 
-    id: str = Field(..., description="Identificador do bebe.")
-    nome: str = Field(..., description="Nome do bebe.")
-    idade_meses: int = Field(..., description="Idade em meses.")
-    fase_alimentar: str = Field(..., description="Fase alimentar.")
+    id: str
+    nome: str
+    idade_meses: int
+    fase_alimentar: str

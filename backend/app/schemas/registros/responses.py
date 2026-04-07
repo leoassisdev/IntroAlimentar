@@ -1,21 +1,42 @@
-"""Responses do modulo de registros."""
+"""Schemas de response para RegistroAlimentar."""
 
+from pydantic import BaseModel
 from datetime import date, datetime
+from typing import Optional
 
-from pydantic import BaseModel, Field
+
+class RegistroResponse(BaseModel):
+    """Resposta pública de registro alimentar."""
+
+    id: str
+    bebe_id: str
+    data: date
+    tipo_refeicao: str
+    categoria: str
+    nome_alimento: str
+    tipo_corte: Optional[str]
+    aceitacao: Optional[int]
+    notas: Optional[str]
+    quantidade: Optional[float]
+    unidade: Optional[str]
+    alimento_alergenico: bool
+    created_at: datetime
 
 
-class RegistroAlimentarResponse(BaseModel):
-    id: str = Field(..., description="Identificador do registro.")
-    bebe_id: str = Field(..., description="Identificador do bebê.")
-    data: date = Field(..., description="Data do registro.")
-    tipo_refeicao: str = Field(..., description="Tipo da refeição.")
-    categoria: str = Field(..., description="Categoria do alimento.")
-    nome_alimento: str = Field(..., description="Nome do alimento.")
-    tipo_corte: str | None = Field(default=None, description="Tipo de corte.")
-    aceitacao: int | None = Field(default=None, description="Aceitação de 1 a 5.")
-    notas: str | None = Field(default=None, description="Observações.")
-    quantidade: float | None = Field(default=None, description="Quantidade.")
-    unidade: str | None = Field(default=None, description="Unidade.")
-    alimento_alergenico: bool = Field(..., description="Se é alergênico.")
-    created_at: datetime = Field(..., description="Criado em.")
+class RegistroDisplayResponse(BaseModel):
+    """Resposta simplificada para listagens."""
+
+    id: str
+    nome_alimento: str
+    tipo_refeicao: str
+    categoria: str
+    aceitacao: Optional[int]
+    data: date
+
+
+class SemanaAtualResponse(BaseModel):
+    """Alimentos usados na semana atual por categoria."""
+
+    categoria: str
+    alimentos: list[str]
+    total: int

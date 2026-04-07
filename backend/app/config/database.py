@@ -1,25 +1,17 @@
-"""Configuracao de banco de dados."""
-
-from collections.abc import Generator
+"""Configuração do banco de dados — SQLite para V1, preparado para PostgreSQL."""
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-from app.config.settings import get_settings
+DATABASE_URL = "sqlite:///./introalimentar.db"
 
-settings = get_settings()
-
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False},
-)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Fornece uma sessao de banco."""
-
+def get_db():
+    """Dependency injection para sessão do banco."""
     db = SessionLocal()
     try:
         yield db

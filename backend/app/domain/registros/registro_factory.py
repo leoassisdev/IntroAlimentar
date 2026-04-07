@@ -1,20 +1,19 @@
-"""Factory do registro alimentar."""
+"""Factory para criação de RegistroAlimentar — única porta de criação."""
 
-from __future__ import annotations
-
-from uuid import uuid4
-
+from datetime import datetime
+import uuid
 from app.domain.registros.registro_entity import RegistroAlimentar
 
 
 class RegistroAlimentarFactory:
-    """Factory única do registro alimentar."""
+    """Fábrica para criar entidades RegistroAlimentar."""
 
     @staticmethod
-    def make_registro(dto: object, bebe_id: str) -> RegistroAlimentar:
+    def make_registro(dto) -> RegistroAlimentar:
+        """Cria um RegistroAlimentar a partir de um DTO."""
         return RegistroAlimentar(
-            id=str(getattr(dto, "id", None) or uuid4()),
-            bebe_id=bebe_id,
+            id=str(uuid.uuid4()),
+            bebe_id=RegistroAlimentarFactory.bebe_id_from(dto),
             data=RegistroAlimentarFactory.data_from(dto),
             tipo_refeicao=RegistroAlimentarFactory.tipo_refeicao_from(dto),
             categoria=RegistroAlimentarFactory.categoria_from(dto),
@@ -24,22 +23,26 @@ class RegistroAlimentarFactory:
             notas=getattr(dto, "notas", None),
             quantidade=getattr(dto, "quantidade", None),
             unidade=getattr(dto, "unidade", None),
-            alimento_alergenico=bool(getattr(dto, "alimento_alergenico", False)),
-            created_at=getattr(dto, "created_at", None) or RegistroAlimentar.now(),
+            alimento_alergenico=getattr(dto, "alimento_alergenico", False),
+            created_at=datetime.utcnow(),
         )
 
     @staticmethod
-    def data_from(dto: object):
-        return getattr(dto, "data")
+    def bebe_id_from(dto) -> str:
+        return dto.bebe_id
 
     @staticmethod
-    def tipo_refeicao_from(dto: object) -> str:
-        return str(getattr(dto, "tipo_refeicao")).strip().lower()
+    def data_from(dto):
+        return dto.data
 
     @staticmethod
-    def categoria_from(dto: object) -> str:
-        return str(getattr(dto, "categoria")).strip().lower()
+    def tipo_refeicao_from(dto) -> str:
+        return dto.tipo_refeicao
 
     @staticmethod
-    def nome_alimento_from(dto: object) -> str:
-        return str(getattr(dto, "nome_alimento")).strip()
+    def categoria_from(dto) -> str:
+        return dto.categoria
+
+    @staticmethod
+    def nome_alimento_from(dto) -> str:
+        return dto.nome_alimento
