@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Utensils, BookOpen, ShieldAlert, Heart } from "lucide-react";
+import { Plus, Utensils, BookOpen, ShieldAlert, Heart, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { bebeStore } from "@/data/store";
-import { idadeEmMeses, faseAlimentar, formatDate } from "@/utils/helpers";
+import { toast } from "sonner";
+import { idadeEmMeses, idadeDetalhada, faseAlimentar, formatDate } from "@/utils/helpers";
 import type { Bebe } from "@/types";
 import FoodCarousel3D from "@/components/FoodCarousel3D";
 import SocialButtons from "@/components/SocialButtons";
@@ -19,7 +21,15 @@ const FASE_COLORS: Record<string, string> = {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [bebes] = useState<Bebe[]>(() => bebeStore.list());
+  const [bebes, setBebes] = useState<Bebe[]>(() => bebeStore.list());
+  const [deleteTarget, setDeleteTarget] = useState<Bebe | null>(null);
+
+  const handleDelete = (bebe: Bebe) => {
+    bebeStore.delete(bebe.id);
+    setBebes(bebeStore.list());
+    setDeleteTarget(null);
+    toast.success(`${bebe.nome} foi removido(a) com sucesso`);
+  };
 
   return (
     <div className="min-h-screen gradient-bg">
@@ -47,8 +57,8 @@ const Index = () => {
         <div className="max-w-2xl mx-auto px-4 pt-6 pb-6 relative z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-[1.2rem] overflow-hidden shadow-xl hover-wiggle">
-                <img src={appIcon} alt="IntroAlimentar" className="w-full h-full object-cover" />
+              <div className="w-14 h-14 rounded-[1.2rem] overflow-hidden shadow-xl hover-wiggle bg-gradient-to-br from-pink-200 via-sky-200 to-green-200">
+                <img src={appIcon} alt="IntroAlimentar" className="w-full h-full object-cover scale-105" />
               </div>
               <div>
                 <h1 className="text-2xl font-extrabold text-white drop-shadow-sm tracking-tight">IntroAlimentar</h1>
@@ -116,6 +126,7 @@ const Index = () => {
             <div className="stagger-children space-y-4">
               {bebes.map((bebe) => {
                 const idade = idadeEmMeses(bebe.data_nascimento);
+                const idadePrecisa = idadeDetalhada(bebe.data_nascimento);
                 const fase = faseAlimentar(bebe.data_nascimento);
                 const faseKey = idade >= 6 && idade <= 8 ? "inicio" : idade > 8 && idade <= 9 ? "intermediario" : idade > 9 && idade <= 12 ? "avancado" : idade > 12 ? "familia" : "antes_da_introducao";
                 const emoji = bebe.genero === "feminino" ? "👧" : bebe.genero === "masculino" ? "👦" : "👶";
@@ -140,15 +151,27 @@ const Index = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-extrabold text-foreground text-lg">{bebe.nome}</h3>
-                          <p className="text-sm text-muted-foreground font-semibold">
-                            {idade} {idade === 1 ? "mês" : "meses"} · {formatDate(bebe.data_nascimento)}
+                          <p className="text-xs text-muted-foreground font-semibold">
+                            {idadePrecisa.texto}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/70 font-semibold">
+                            {formatDate(bebe.data_nascimento)}
                           </p>
                           <span className={`inline-block mt-1.5 text-xs font-extrabold px-3 py-1 rounded-full ${FASE_COLORS[faseKey]}`}>
                             {fase.fase}
                           </span>
                         </div>
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover-wiggle">
-                          <span className="text-primary font-extrabold text-lg">→</span>
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center hover-wiggle">
+                            <span className="text-primary font-extrabold text-lg">→</span>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(bebe); }}
+                            className="w-8 h-8 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors"
+                            title="Excluir perfil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                          </button>
                         </div>
                       </div>
                     </CardContent>
@@ -206,6 +229,34 @@ const Index = () => {
           </div>
         </footer>
       </main>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="rounded-[1.5rem] border-2 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-lg">Excluir perfil</DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja excluir o perfil de <strong>{deleteTarget?.nome}</strong>? Os registros alimentares serão mantidos, mas o perfil não aparecerá mais na lista.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-2">
+            <button
+              className="btn-3d flex-1 text-sm py-2.5"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="flex-1 text-sm py-2.5 rounded-xl bg-destructive text-white font-bold hover:bg-destructive/90 transition-colors"
+              onClick={() => deleteTarget && handleDelete(deleteTarget)}
+            >
+              <span className="flex items-center justify-center gap-1.5">
+                <Trash2 className="w-4 h-4" /> Excluir
+              </span>
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

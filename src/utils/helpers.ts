@@ -4,6 +4,42 @@ export function idadeEmMeses(dataNascimento: string): number {
   return (hoje.getFullYear() - nascimento.getFullYear()) * 12 + (hoje.getMonth() - nascimento.getMonth());
 }
 
+export function idadeDetalhada(dataNascimento: string): { anos: number; meses: number; semanas: number; dias: number; texto: string } {
+  const nascimento = new Date(dataNascimento + "T12:00:00");
+  const hoje = new Date();
+
+  let anos = hoje.getFullYear() - nascimento.getFullYear();
+  let meses = hoje.getMonth() - nascimento.getMonth();
+  let dias = hoje.getDate() - nascimento.getDate();
+
+  if (dias < 0) {
+    meses--;
+    const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0);
+    dias += mesAnterior.getDate();
+  }
+  if (meses < 0) {
+    anos--;
+    meses += 12;
+  }
+
+  const semanas = Math.floor(dias / 7);
+  const diasRestantes = dias % 7;
+
+  const partes: string[] = [];
+  if (anos > 0) partes.push(`${anos} ${anos === 1 ? "ano" : "anos"}`);
+  if (meses > 0) partes.push(`${meses} ${meses === 1 ? "mês" : "meses"}`);
+  if (semanas > 0) partes.push(`${semanas} ${semanas === 1 ? "semana" : "semanas"}`);
+  if (diasRestantes > 0) partes.push(`${diasRestantes} ${diasRestantes === 1 ? "dia" : "dias"}`);
+
+  return {
+    anos,
+    meses,
+    semanas,
+    dias: diasRestantes,
+    texto: partes.length > 0 ? partes.join(", ") : "Recém-nascido",
+  };
+}
+
 export function faseAlimentar(dataNascimento: string): { fase: string; descricao: string } {
   const idade = idadeEmMeses(dataNascimento);
   if (idade < 6) return { fase: "Antes da introdução", descricao: "Aleitamento exclusivo" };
