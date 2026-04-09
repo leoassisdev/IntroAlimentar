@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus, X, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,60 +8,122 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { registroStore } from "@/data/store";
-import { generateId } from "@/utils/helpers";
+import { generateId, getAlimentosDoRegistro } from "@/utils/helpers";
 import { FOOD_DATABASE } from "@/data/foods";
 import { TIPO_REFEICAO_LABELS, CATEGORIA_LABELS } from "@/types";
-import type { TipoRefeicao, CategoriaAlimento } from "@/types";
+import type { TipoRefeicao, CategoriaAlimento, ItemAlimento } from "@/types";
 import { toast } from "sonner";
+
+const aceitacaoEmojis = [
+  { value: 1, emoji: "😫", label: "Rejeitou" },
+  { value: 2, emoji: "😕", label: "Pouco" },
+  { value: 3, emoji: "😐", label: "Ok" },
+  { value: 4, emoji: "😊", label: "Gostou" },
+  { value: 5, emoji: "😍", label: "Amou!" },
+];
 
 const NovoRegistro = () => {
   const { id: bebeId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialDate = searchParams.get("data") || new Date().toISOString().split("T")[0];
+
   const [data, setData] = useState(initialDate);
   const [tipoRefeicao, setTipoRefeicao] = useState<TipoRefeicao>("almoco");
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [notas, setNotas] = useState("");
+
   const [categoria, setCategoria] = useState<CategoriaAlimento>("frutas");
   const [nomeAlimento, setNomeAlimento] = useState("");
+  const [nomeCustom, setNomeCustom] = useState("");
   const [tipoCorte, setTipoCorte] = useState("");
-  const [aceitacao, setAceitacao] = useState<number | undefined>();
-  const [notas, setNotas] = useState("");
-  const [quantidade, setQuantidade] = useState("");
-  const [unidade, setUnidade] = useState("");
-  const [fotos, setFotos] = useState<string[]>([]);
+
+  const [alimentos, setAlimentos] = useState<ItemAlimento[]>([]);
 
   if (!bebeId) return null;
+
+  const alimentosJaOferecidos = useMemo(() => {
+    const registros = registroStore.listByBebe(bebeId);
+    const set = new Set<string>();
+    registros.forEach(r => {
+      getAlimentosDoRegistro(r).forEach(a => set.add(a.nome));
+    });
+    return set;
+  }, [bebeId]);
 
   const alimentosCategoria = FOOD_DATABASE[categoria] || [];
   const alimentoSelecionado = alimentosCategoria.find((a) => a.nome === nomeAlimento);
   const cortesSugeridos = alimentoSelecionado?.cortes || [];
 
+  const handleAddAlimento = () => {
+    const nome = nomeAlimento === "__outro__" ? nomeCustom.trim() : nomeAlimento;
+    if (!nome) { toast.error("Selecione ou digite um alimento"); return; }
+    if (alimentos.some(a => a.nome === nome)) {
+      toast.error("Alimento já adicionado");
+      return;
+    }
+
+    const novidade = !alimentosJaOferecidos.has(nome);
+
+    const item: ItemAlimento = {
+      nome,
+      categoria,
+      tipo_corte: tipoCorte || undefined,
+      alergenico: alimentoSelecionado?.alergenico || false,
+      novidade,
+    };
+
+    setAlimentos([...alimentos, item]);
+    setNomeAlimento("");
+    setNomeCustom("");
+    setTipoCorte("");
+
+    if (novidade) {
+      toast.success(`${item.nome} é novidade! ✨`);
+    }
+    if (item.alergenico) {
+      toast.warning(`⚠️ ${item.nome} é alergênico — fique atenta(o)!`, { duration: 4000 });
+    }
+  };
+
+  const handleRemoveAlimento = (index: number) => {
+    setAlimentos(alimentos.filter((_, i) => i !== index));
+  };
+
+  const handleSetAceitacao = (index: number, value: number) => {
+    const updated = [...alimentos];
+    updated[index] = { ...updated[index], aceitacao: updated[index].aceitacao === value ? undefined : value };
+    setAlimentos(updated);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nomeAlimento) { toast.error("Selecione um alimento"); return; }
+    if (alimentos.length === 0) { toast.error("Adicione pelo menos um alimento"); return; }
 
     registroStore.create({
-      id: generateId(), bebe_id: bebeId, data, tipo_refeicao: tipoRefeicao, categoria,
-      nome_alimento: nomeAlimento, tipo_corte: tipoCorte || undefined, aceitacao,
-      notas: notas || undefined, quantidade: quantidade ? parseFloat(quantidade) : undefined,
-      unidade: (unidade || undefined) as any, alimento_alergenico: alimentoSelecionado?.alergenico || false,
-      fotos: fotos.length > 0 ? fotos : undefined, created_at: new Date().toISOString(),
+      id: generateId(),
+      bebe_id: bebeId,
+      data,
+      tipo_refeicao: tipoRefeicao,
+      categoria: alimentos[0].categoria,
+      nome_alimento: alimentos.map(a => a.nome).join(", "),
+      tipo_corte: alimentos[0].tipo_corte,
+      aceitacao: undefined,
+      alimento_alergenico: alimentos.some(a => a.alergenico),
+      alimentos,
+      notas: notas || undefined,
+      fotos: fotos.length > 0 ? fotos : undefined,
+      created_at: new Date().toISOString(),
     });
 
-    toast.success(`${nomeAlimento} registrado! 🎉`);
-    if (alimentoSelecionado?.alergenico) {
-      toast.warning(`⚠️ ${nomeAlimento} é alergênico — fique atenta(o) a reações!`, { duration: 5000 });
+    const nomes = alimentos.map(a => a.nome).join(", ");
+    toast.success(`${nomes} registrado! 🎉`);
+    const novidades = alimentos.filter(a => a.novidade);
+    if (novidades.length > 0) {
+      toast.success(`✨ Novidade${novidades.length > 1 ? "s" : ""}: ${novidades.map(a => a.nome).join(", ")}!`, { duration: 5000 });
     }
     navigate(`/bebe/${bebeId}`);
   };
-
-  const aceitacaoEmojis = [
-    { value: 1, emoji: "😫", label: "Rejeitou" },
-    { value: 2, emoji: "😕", label: "Pouco" },
-    { value: 3, emoji: "😐", label: "Ok" },
-    { value: 4, emoji: "😊", label: "Gostou" },
-    { value: 5, emoji: "😍", label: "Amou!" },
-  ];
 
   return (
     <div className="min-h-screen gradient-bg">
@@ -109,48 +171,117 @@ const NovoRegistro = () => {
             </CardContent>
           </Card>
 
-          {/* Alimento */}
+          {/* Alimentos */}
           <Card className="rounded-[1.5rem] border-2 border-secondary/15 overflow-hidden animate-pop-in">
             <div className="h-1.5 bg-secondary/40" />
             <CardContent className="p-5 space-y-4">
               <p className="font-bold text-base text-foreground">🍎 O que comeu?</p>
-              <div className="space-y-2">
-                <Label className="text-sm font-extrabold">Categoria</Label>
-                <Select value={categoria} onValueChange={(v) => { setCategoria(v as CategoriaAlimento); setNomeAlimento(""); setTipoCorte(""); }}>
-                  <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(CATEGORIA_LABELS).filter(([k]) => k !== "leite" && k !== "agua").map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {alimentosCategoria.length > 0 && (
+              {/* Added foods list */}
+              {alimentos.length > 0 && (
+                <div className="space-y-3">
+                  {alimentos.map((item, idx) => (
+                    <div key={idx} className="p-3 bg-card rounded-[1rem] border-2 border-border shadow-sm animate-pop-in">
+                      <div className="flex items-center gap-2 mb-2">
+                        <button type="button" onClick={() => handleRemoveAlimento(idx)}
+                          className="w-6 h-6 rounded-full bg-destructive/15 hover:bg-destructive/30 flex items-center justify-center transition-colors shrink-0">
+                          <X className="w-3 h-3 text-destructive" />
+                        </button>
+                        <span className="font-extrabold text-sm flex-1">{item.nome}</span>
+                        {item.novidade && (
+                          <span className="text-[10px] font-extrabold bg-gradient-to-r from-purple/15 to-accent/15 text-purple border border-purple/20 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                            <Sparkles className="w-3 h-3" /> Novidade!
+                          </span>
+                        )}
+                        {item.alergenico && (
+                          <span className="text-[10px] font-extrabold bg-yellow/15 text-yellow-700 border border-yellow/30 px-2 py-0.5 rounded-full shrink-0">⚠️</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-semibold mb-2">
+                        <span>{CATEGORIA_LABELS[item.categoria]}</span>
+                        {item.tipo_corte && <span>· ✂️ {item.tipo_corte}</span>}
+                      </div>
+                      {/* Acceptance per food */}
+                      {item.categoria !== "agua" && item.categoria !== "leite" && (
+                        <div className="flex gap-1.5">
+                          {aceitacaoEmojis.map((a) => (
+                            <button key={a.value} type="button" onClick={() => handleSetAceitacao(idx, a.value)}
+                              className={`flex-1 py-1.5 rounded-lg border-2 transition-all text-center bounce-tap ${
+                                item.aceitacao === a.value ? "border-yellow bg-yellow-light scale-105 shadow-sm" : "border-border hover:border-yellow/40 bg-card"
+                              }`}>
+                              <span className={`text-lg block ${item.aceitacao === a.value ? "animate-wiggle" : ""}`}>{a.emoji}</span>
+                              <span className="text-[8px] font-extrabold text-muted-foreground block">{a.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add food form */}
+              <div className="p-4 bg-secondary/5 rounded-[1rem] border-2 border-dashed border-secondary/20 space-y-3">
+                <p className="text-xs font-extrabold text-muted-foreground">
+                  {alimentos.length === 0 ? "Adicione os alimentos da refeição" : "+ Adicionar outro alimento"}
+                </p>
                 <div className="space-y-2">
-                  <Label className="text-sm font-extrabold">Alimento</Label>
-                  <Select value={nomeAlimento} onValueChange={(v) => { setNomeAlimento(v); setTipoCorte(""); }}>
-                    <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue placeholder="Escolha o alimento" /></SelectTrigger>
+                  <Label className="text-sm font-extrabold">Categoria</Label>
+                  <Select value={categoria} onValueChange={(v) => { setCategoria(v as CategoriaAlimento); setNomeAlimento(""); setTipoCorte(""); }}>
+                    <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {alimentosCategoria.map((a) => (
-                        <SelectItem key={a.nome} value={a.nome}>{a.nome} {a.alergenico ? "⚠️" : ""}</SelectItem>
+                      {Object.entries(CATEGORIA_LABELS).filter(([k]) => k !== "leite" && k !== "agua").map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {cortesSugeridos.length > 0 && (
                 <div className="space-y-2">
-                  <Label className="text-sm font-extrabold">Tipo de Corte ✂️</Label>
-                  <Select value={tipoCorte} onValueChange={setTipoCorte}>
-                    <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue placeholder="Selecione o corte" /></SelectTrigger>
-                    <SelectContent>
-                      {cortesSugeridos.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
+                <Label className="text-sm font-extrabold">Alimento</Label>
+                <Select value={nomeAlimento} onValueChange={(v) => { setNomeAlimento(v); setNomeCustom(""); setTipoCorte(""); }}>
+                  <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue placeholder="Escolha o alimento" /></SelectTrigger>
+                  <SelectContent>
+                    {alimentosCategoria.map((a) => (
+                      <SelectItem key={a.nome} value={a.nome}>
+                        {a.nome} {a.alergenico ? "⚠️" : ""} {!alimentosJaOferecidos.has(a.nome) ? "✨" : ""}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__outro__">✏️ Outro...</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {nomeAlimento === "__outro__" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-extrabold">Nome do alimento</Label>
+                  <Input
+                    value={nomeCustom}
+                    onChange={(e) => setNomeCustom(e.target.value)}
+                    placeholder="Digite o nome do alimento"
+                    className="rounded-[1rem] h-12 border-2 font-semibold"
+                    autoFocus
+                  />
                 </div>
               )}
+
+                {cortesSugeridos.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-extrabold">Tipo de Corte ✂️</Label>
+                    <Select value={tipoCorte} onValueChange={setTipoCorte}>
+                      <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue placeholder="Selecione o corte" /></SelectTrigger>
+                      <SelectContent>
+                        {cortesSugeridos.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <button type="button" onClick={handleAddAlimento}
+                  className="btn-3d btn-3d-secondary w-full text-sm py-3 flex items-center justify-center gap-2">
+                  <Plus className="w-4 h-4" /> Adicionar Alimento
+                </button>
+              </div>
             </CardContent>
           </Card>
 
@@ -160,63 +291,21 @@ const NovoRegistro = () => {
             <CardContent className="p-5 space-y-3">
               <p className="font-bold text-base text-foreground">📸 Fotos (opcional)</p>
               <p className="text-xs text-muted-foreground font-semibold">Registre a refeição ou o bebê comendo!</p>
-              <PhotoUpload photos={fotos} onAdd={(p) => setFotos([...fotos, p])} onRemove={(i) => setFotos(fotos.filter((_, idx) => idx !== i))} maxPhotos={4} label="Foto" />
+              <PhotoUpload photos={fotos} onAdd={(p) => setFotos([...fotos, p])} onRemove={(i) => setFotos(fotos.filter((_, idx) => idx !== i))} maxPhotos={8} label="Foto" />
             </CardContent>
           </Card>
 
-          {/* Aceitação */}
-          {categoria !== "agua" && categoria !== "leite" && (
-            <Card className="rounded-[1.5rem] border-2 border-yellow/15 overflow-hidden animate-pop-in">
-              <div className="h-1.5 bg-yellow/40" />
-              <CardContent className="p-5">
-                <p className="font-bold text-base text-foreground mb-4">😋 Como foi a aceitação?</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {aceitacaoEmojis.map((a) => (
-                    <button key={a.value} type="button" onClick={() => setAceitacao(a.value)}
-                      className={`p-3 rounded-[1rem] border-2 transition-all text-center bounce-tap ${
-                        aceitacao === a.value ? "border-yellow bg-yellow-light scale-110 shadow-lg" : "border-border hover:border-yellow/40 bg-card"
-                      }`}>
-                      <span className={`text-2xl block ${aceitacao === a.value ? "animate-wiggle" : ""}`}>{a.emoji}</span>
-                      <span className="text-[9px] font-extrabold text-muted-foreground">{a.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Detalhes */}
+          {/* Observações */}
           <Card className="rounded-[1.5rem] border-2 border-purple/10 overflow-hidden animate-pop-in">
             <div className="h-1.5 bg-purple/30" />
             <CardContent className="p-5 space-y-4">
-              <p className="font-bold text-base text-foreground">📝 Detalhes (opcional)</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-sm font-extrabold">Quantidade</Label>
-                  <Input type="number" placeholder="Ex: 100" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} className="rounded-[1rem] h-12 border-2 font-semibold" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-extrabold">Unidade</Label>
-                  <Select value={unidade} onValueChange={setUnidade}>
-                    <SelectTrigger className="rounded-[1rem] h-12 border-2 font-semibold"><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="g">gramas</SelectItem>
-                      <SelectItem value="ml">ml</SelectItem>
-                      <SelectItem value="porcao">porção</SelectItem>
-                      <SelectItem value="min">minutos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-extrabold">Observações</Label>
-                <Textarea placeholder="Como foi a refeição?" value={notas} onChange={(e) => setNotas(e.target.value)} className="rounded-[1rem] resize-none border-2 font-semibold" rows={3} />
-              </div>
+              <p className="font-bold text-base text-foreground">📝 Observações (opcional)</p>
+              <Textarea placeholder="Como foi a refeição?" value={notas} onChange={(e) => setNotas(e.target.value)} className="rounded-[1rem] resize-none border-2 font-semibold" rows={3} />
             </CardContent>
           </Card>
 
           <button type="submit" className="btn-3d btn-3d-secondary w-full text-base py-4">
-            Salvar Registro ✅
+            Salvar Registro ✅ {alimentos.length > 0 && `(${alimentos.length} alimento${alimentos.length > 1 ? "s" : ""})`}
           </button>
         </form>
       </main>

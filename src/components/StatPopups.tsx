@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { TIPO_REFEICAO_LABELS, CATEGORIA_LABELS } from "@/types";
 import type { RegistroAlimentar } from "@/types";
+import { getAlimentosDoRegistro } from "@/utils/helpers";
 
 interface AlimentosPopupProps {
   open: boolean;
@@ -11,8 +12,10 @@ interface AlimentosPopupProps {
 export const AlimentosPopup = ({ open, onClose, registros }: AlimentosPopupProps) => {
   const porCategoria: Record<string, Record<string, number>> = {};
   registros.forEach((r) => {
-    if (!porCategoria[r.categoria]) porCategoria[r.categoria] = {};
-    porCategoria[r.categoria][r.nome_alimento] = (porCategoria[r.categoria][r.nome_alimento] || 0) + 1;
+    getAlimentosDoRegistro(r).forEach((a) => {
+      if (!porCategoria[a.categoria]) porCategoria[a.categoria] = {};
+      porCategoria[a.categoria][a.nome] = (porCategoria[a.categoria][a.nome] || 0) + 1;
+    });
   });
 
   return (
@@ -76,8 +79,8 @@ export const RegistrosPopup = ({ open, onClose, registros }: RegistrosPopupProps
                   {regs.map((r) => (
                     <div key={r.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/5 border border-primary/10">
                       <span className="text-sm">{TIPO_REFEICAO_LABELS[r.tipo_refeicao]?.split(" ")[0]}</span>
-                      <span className="text-xs font-bold text-foreground flex-1">{r.nome_alimento}</span>
-                      {r.aceitacao && <span className="text-xs">{"😫😕😐😊😍"[r.aceitacao - 1]}</span>}
+                      <span className="text-xs font-bold text-foreground flex-1">{getAlimentosDoRegistro(r).map(a => a.nome).join(", ")}</span>
+                      <span className="text-xs">{getAlimentosDoRegistro(r).filter(a => a.aceitacao).map(a => "😫😕😐😊😍"[a.aceitacao! - 1]).join("")}</span>
                     </div>
                   ))}
                 </div>

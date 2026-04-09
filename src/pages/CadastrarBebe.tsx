@@ -8,6 +8,7 @@ import { ProfilePhoto } from "@/components/PhotoUpload";
 import { bebeStore } from "@/data/store";
 import { generateId } from "@/utils/helpers";
 import { toast } from "sonner";
+import { showPrivacyPopup } from "@/components/PrivacyPopup";
 
 const CadastrarBebe = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const CadastrarBebe = () => {
 
     const now = new Date().toISOString();
     bebeStore.create({ id: generateId(), nome, data_nascimento: dataNascimento, genero, foto, ativo: true, created_at: now, updated_at: now });
+    showPrivacyPopup();
     toast.success(`${nome} cadastrado(a) com sucesso! 🎉`);
     navigate("/");
   };

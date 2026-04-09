@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { bebeStore, registroStore } from "@/data/store";
-import { idadeEmMeses, faseAlimentar } from "@/utils/helpers";
+import { idadeEmMeses, faseAlimentar, getAlimentosDoRegistro } from "@/utils/helpers";
 import { CATEGORIA_LABELS } from "@/types";
 import type { Bebe, RegistroAlimentar } from "@/types";
 
@@ -40,13 +40,15 @@ const RelatorioPage = () => {
   const baixaAceitacao: string[] = [];
 
   semana.forEach((r) => {
-    categorias[r.categoria] = (categorias[r.categoria] || 0) + 1;
-    alimentosUnicos.add(r.nome_alimento);
-    if (r.aceitacao) {
-      totalAceitacao += r.aceitacao;
-      countAceitacao++;
-      if (r.aceitacao <= 2) baixaAceitacao.push(r.nome_alimento);
-    }
+    getAlimentosDoRegistro(r).forEach((a) => {
+      categorias[a.categoria] = (categorias[a.categoria] || 0) + 1;
+      alimentosUnicos.add(a.nome);
+      if (a.aceitacao) {
+        totalAceitacao += a.aceitacao;
+        countAceitacao++;
+        if (a.aceitacao <= 2) baixaAceitacao.push(a.nome);
+      }
+    });
   });
 
   const media = countAceitacao > 0 ? (totalAceitacao / countAceitacao).toFixed(1) : "—";

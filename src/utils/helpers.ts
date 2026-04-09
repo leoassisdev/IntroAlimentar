@@ -86,3 +86,17 @@ export function diaDaSemana(dataNascimento: string): string {
   const dias = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
   return dias[new Date(dataNascimento + "T12:00:00").getDay()];
 }
+
+import type { RegistroAlimentar, ItemAlimento } from "@/types";
+
+export function getAlimentosDoRegistro(r: RegistroAlimentar): ItemAlimento[] {
+  if (r.alimentos && r.alimentos.length > 0) return r.alimentos;
+  return [{
+    nome: r.nome_alimento,
+    categoria: r.categoria,
+    tipo_corte: r.tipo_corte,
+    aceitacao: r.aceitacao,
+    alergenico: r.alimento_alergenico,
+    novidade: false,
+  }];
+}

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { bebeStore, registroStore } from "@/data/store";
-import { formatDate, generateId } from "@/utils/helpers";
+import { formatDate, generateId, getAlimentosDoRegistro } from "@/utils/helpers";
 import type { Bebe, RegistroAlimentar } from "@/types";
 
 interface Marco {
@@ -46,9 +46,9 @@ const TIPO_MARCOS = [
 ];
 
 const CONQUISTAS = [
-  { titulo: "Primeira fruta", condFn: (r: RegistroAlimentar[]) => r.some(x => x.categoria === "frutas"), emoji: "🍌" },
-  { titulo: "Primeira proteína", condFn: (r: RegistroAlimentar[]) => r.some(x => x.categoria === "proteinas"), emoji: "🥩" },
-  { titulo: "10 alimentos diferentes", condFn: (r: RegistroAlimentar[]) => new Set(r.map(x => x.nome_alimento)).size >= 10, emoji: "🎯" },
+  { titulo: "Primeira fruta", condFn: (r: RegistroAlimentar[]) => r.some(x => getAlimentosDoRegistro(x).some(a => a.categoria === "frutas")), emoji: "🍌" },
+  { titulo: "Primeira proteína", condFn: (r: RegistroAlimentar[]) => r.some(x => getAlimentosDoRegistro(x).some(a => a.categoria === "proteinas")), emoji: "🥩" },
+  { titulo: "10 alimentos diferentes", condFn: (r: RegistroAlimentar[]) => new Set(r.flatMap(x => getAlimentosDoRegistro(x).map(a => a.nome))).size >= 10, emoji: "🎯" },
   { titulo: "30 refeições registradas", condFn: (r: RegistroAlimentar[]) => r.length >= 30, emoji: "📋" },
   { titulo: "100 refeições registradas", condFn: (r: RegistroAlimentar[]) => r.length >= 100, emoji: "🏆" },
   { titulo: "3 dias seguidos", condFn: (r: RegistroAlimentar[]) => {
@@ -60,7 +60,7 @@ const CONQUISTAS = [
     return false;
   }, emoji: "🔥" },
   { titulo: "Todas as frutas", condFn: (r: RegistroAlimentar[]) => {
-    const frutas = new Set(r.filter(x => x.categoria === "frutas").map(x => x.nome_alimento));
+    const frutas = new Set(r.flatMap(x => getAlimentosDoRegistro(x).filter(a => a.categoria === "frutas").map(a => a.nome)));
     return frutas.size >= 10;
   }, emoji: "🍇" },
 ];
@@ -271,9 +271,9 @@ const MarcosPage = () => {
                           {r.fotos && r.fotos[0] && (
                             <img src={r.fotos[0]} alt="" className="w-full h-16 object-cover rounded-lg mb-2" />
                           )}
-                          <p className="text-xs font-extrabold">{r.nome_alimento}</p>
+                          <p className="text-xs font-extrabold">{getAlimentosDoRegistro(r).map(a => a.nome).join(", ")}</p>
                           <p className="text-[10px] text-muted-foreground font-semibold">{r.tipo_refeicao.replace("_", " ")}</p>
-                          {r.aceitacao && <span className="text-[10px] font-extrabold text-yellow">⭐ {r.aceitacao}/5</span>}
+                          {getAlimentosDoRegistro(r).some(a => a.aceitacao) && <span className="text-[10px] font-extrabold text-yellow">⭐ {(getAlimentosDoRegistro(r).filter(a => a.aceitacao).reduce((s, a) => s + a.aceitacao!, 0) / getAlimentosDoRegistro(r).filter(a => a.aceitacao).length).toFixed(0)}/5</span>}
                         </CardContent>
                       </Card>
                     ))}

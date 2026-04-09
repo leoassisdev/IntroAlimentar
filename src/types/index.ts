@@ -9,6 +9,15 @@ export interface Bebe {
   updated_at: string;
 }
 
+export interface ItemAlimento {
+  nome: string;
+  categoria: CategoriaAlimento;
+  tipo_corte?: string;
+  aceitacao?: number;
+  alergenico: boolean;
+  novidade?: boolean;
+}
+
 export interface RegistroAlimentar {
   id: string;
   bebe_id: string;
@@ -22,7 +31,8 @@ export interface RegistroAlimentar {
   quantidade?: number;
   unidade?: "ml" | "min" | "g" | "porcao";
   alimento_alergenico: boolean;
-  fotos?: string[]; // base64 photos of baby eating / food
+  alimentos?: ItemAlimento[];
+  fotos?: string[];
   created_at: string;
 }
 

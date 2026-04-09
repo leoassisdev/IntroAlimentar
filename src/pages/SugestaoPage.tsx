@@ -3,16 +3,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles, Lightbulb, TrendingUp, ShoppingCart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { bebeStore, registroStore } from "@/data/store";
-import { idadeEmMeses, faseAlimentar } from "@/utils/helpers";
+import { idadeEmMeses, faseAlimentar, getAlimentosDoRegistro } from "@/utils/helpers";
 import { FOOD_DATABASE } from "@/data/foods";
 import { CATEGORIA_LABELS } from "@/types";
 import type { Bebe, RegistroAlimentar, CategoriaAlimento } from "@/types";
 
 function getScoreNutricional(registros: RegistroAlimentar[]): { score: number; nivel: string; cor: string; emoji: string } {
   if (registros.length === 0) return { score: 0, nivel: "Sem dados", cor: "text-muted-foreground", emoji: "⚪" };
-  const cats = new Set(registros.map(r => r.categoria));
-  const alimentos = new Set(registros.map(r => r.nome_alimento));
-  const aceitacoes = registros.filter(r => r.aceitacao).map(r => r.aceitacao!);
+  const allItems = registros.flatMap(r => getAlimentosDoRegistro(r));
+  const cats = new Set(allItems.map(a => a.categoria));
+  const alimentos = new Set(allItems.map(a => a.nome));
+  const aceitacoes = allItems.filter(a => a.aceitacao).map(a => a.aceitacao!);
   const mediaAceitacao = aceitacoes.length > 0 ? aceitacoes.reduce((a, b) => a + b, 0) / aceitacoes.length : 0;
 
   let score = 0;
@@ -26,7 +27,7 @@ function getScoreNutricional(registros: RegistroAlimentar[]): { score: number; n
 }
 
 function getAlimentosNaoExplorados(registros: RegistroAlimentar[]): Record<string, string[]> {
-  const comidos = new Set(registros.map(r => r.nome_alimento));
+  const comidos = new Set(registros.flatMap(r => getAlimentosDoRegistro(r).map(a => a.nome)));
   const naoExplorados: Record<string, string[]> = {};
   const cats: CategoriaAlimento[] = ["frutas", "vegetais_folhosos", "legumes", "proteinas", "cereais", "leguminosas"];
   for (const cat of cats) {
@@ -42,11 +43,13 @@ function getPadroesAceitacao(registros: RegistroAlimentar[]): string[] {
   const porRefeicao: Record<string, number[]> = {};
 
   registros.forEach(r => {
-    if (!r.aceitacao) return;
-    if (!porCategoria[r.categoria]) porCategoria[r.categoria] = [];
-    porCategoria[r.categoria].push(r.aceitacao);
-    if (!porRefeicao[r.tipo_refeicao]) porRefeicao[r.tipo_refeicao] = [];
-    porRefeicao[r.tipo_refeicao].push(r.aceitacao);
+    getAlimentosDoRegistro(r).forEach(a => {
+      if (!a.aceitacao) return;
+      if (!porCategoria[a.categoria]) porCategoria[a.categoria] = [];
+      porCategoria[a.categoria].push(a.aceitacao);
+      if (!porRefeicao[r.tipo_refeicao]) porRefeicao[r.tipo_refeicao] = [];
+      porRefeicao[r.tipo_refeicao].push(a.aceitacao);
+    });
   });
 
   // melhor categoria
@@ -73,7 +76,9 @@ function getPadroesAceitacao(registros: RegistroAlimentar[]): string[] {
   // rejeitados recorrentes
   const rejeitados: Record<string, number> = {};
   registros.forEach(r => {
-    if (r.aceitacao && r.aceitacao <= 2) rejeitados[r.nome_alimento] = (rejeitados[r.nome_alimento] || 0) + 1;
+    getAlimentosDoRegistro(r).forEach(a => {
+      if (a.aceitacao && a.aceitacao <= 2) rejeitados[a.nome] = (rejeitados[a.nome] || 0) + 1;
+    });
   });
   const recorrentes = Object.entries(rejeitados).filter(([, c]) => c >= 2).map(([n]) => n);
   if (recorrentes.length > 0) {
@@ -94,14 +99,16 @@ function getSugestaoHoje(registros: RegistroAlimentar[], idadeMeses: number): { 
   else if (hora >= 14 && hora < 17) refeicao = "lanche da tarde";
   else refeicao = "jantar";
 
-  const jaComeramHoje = new Set(hojeRegs.map(r => r.nome_alimento));
+  const jaComeramHoje = new Set(hojeRegs.flatMap(r => getAlimentosDoRegistro(r).map(a => a.nome)));
   const semanaPassada = registros.filter(r => {
     const d = new Date(r.data);
     const diff = (new Date().getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
     return diff <= 7;
   });
   const frequencia: Record<string, number> = {};
-  semanaPassada.forEach(r => { frequencia[r.nome_alimento] = (frequencia[r.nome_alimento] || 0) + 1; });
+  semanaPassada.forEach(r => {
+    getAlimentosDoRegistro(r).forEach(a => { frequencia[a.nome] = (frequencia[a.nome] || 0) + 1; });
+  });
 
   const prato: string[] = [];
   const cats: CategoriaAlimento[] = ["cereais", "leguminosas", "proteinas", "legumes"];
@@ -121,7 +128,7 @@ function gerarListaCompras(registros: RegistroAlimentar[]): Record<string, strin
     const diff = (new Date().getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
     return diff <= 7;
   });
-  const alimentos = new Set(semana.map(r => r.nome_alimento));
+  const alimentos = new Set(semana.flatMap(r => getAlimentosDoRegistro(r).map(a => a.nome)));
   const lista: Record<string, string[]> = {};
   const cats: CategoriaAlimento[] = ["frutas", "vegetais_folhosos", "legumes", "proteinas", "cereais", "leguminosas"];
   for (const cat of cats) {
@@ -158,7 +165,7 @@ const SugestaoPage = () => {
   const padroes = getPadroesAceitacao(registros);
   const sugestao = getSugestaoHoje(registros, idade);
   const totalAlimentos = Object.values(FOOD_DATABASE).flat().length;
-  const experimentados = new Set(registros.map(r => r.nome_alimento)).size;
+  const experimentados = new Set(registros.flatMap(r => getAlimentosDoRegistro(r).map(a => a.nome))).size;
   const listaCompras = gerarListaCompras(registros);
 
   return (
@@ -326,10 +333,12 @@ const SugestaoPage = () => {
             {registros.length > 0 && (() => {
               const aceitacaoPorAlimento: Record<string, number[]> = {};
               registros.forEach(r => {
-                if (r.aceitacao) {
-                  if (!aceitacaoPorAlimento[r.nome_alimento]) aceitacaoPorAlimento[r.nome_alimento] = [];
-                  aceitacaoPorAlimento[r.nome_alimento].push(r.aceitacao);
-                }
+                getAlimentosDoRegistro(r).forEach(a => {
+                  if (a.aceitacao) {
+                    if (!aceitacaoPorAlimento[a.nome]) aceitacaoPorAlimento[a.nome] = [];
+                    aceitacaoPorAlimento[a.nome].push(a.aceitacao);
+                  }
+                });
               });
               const ranking = Object.entries(aceitacaoPorAlimento)
                 .map(([nome, vals]) => ({ nome, media: vals.reduce((a, b) => a + b, 0) / vals.length }))

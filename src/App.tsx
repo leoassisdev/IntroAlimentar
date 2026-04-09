@@ -3,6 +3,8 @@ import { HashRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TipsTicker } from "./components/TipsTicker";
+import { PrivacyPopup } from "./components/PrivacyPopup";
 import Index from "./pages/Index";
 import CadastrarBebe from "./pages/CadastrarBebe";
 import BebePage from "./pages/BebePage";
@@ -39,6 +41,8 @@ const App = () => (
           <Route path="/seguranca" element={<SegurancaAlimentarPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <TipsTicker />
+        <PrivacyPopup />
       </HashRouter>
     </TooltipProvider>
   </QueryClientProvider>

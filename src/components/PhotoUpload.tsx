@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Camera, X, Plus } from "lucide-react";
+import { showPrivacyPopup } from "@/components/PrivacyPopup";
 
 interface PhotoUploadProps {
   photos: string[];
@@ -54,6 +55,7 @@ export const PhotoUpload = ({
         const ctx = canvas.getContext("2d");
         ctx?.drawImage(img, 0, 0, w, h);
         const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        showPrivacyPopup();
         onAdd(compressed);
       };
       img.src = result;
@@ -128,7 +130,9 @@ export const ProfilePhoto = ({ foto, onPhotoChange, genero, size = 80 }: Profile
         const sx = (img.width - minDim) / 2;
         const sy = (img.height - minDim) / 2;
         ctx?.drawImage(img, sx, sy, minDim, minDim, 0, 0, dim, dim);
-        onPhotoChange(canvas.toDataURL("image/jpeg", 0.8));
+        const result64 = canvas.toDataURL("image/jpeg", 0.8);
+        showPrivacyPopup();
+        onPhotoChange(result64);
       };
       img.src = result;
     };

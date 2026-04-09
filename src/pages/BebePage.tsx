@@ -6,12 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProfilePhoto } from "@/components/PhotoUpload";
 import { RegistroCard } from "@/components/RegistroCard";
 import { AlimentosPopup, RegistrosPopup, Regra3Popup } from "@/components/StatPopups";
-import { TipsTicker } from "@/components/TipsTicker";
 import { CalendarioAlimentar } from "@/components/CalendarioAlimentar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { bebeStore, registroStore } from "@/data/store";
 import { toast } from "sonner";
-import { idadeEmMeses, idadeDetalhada, faseAlimentar, formatDate, getSigno, getElementoChinês, diaDaSemana } from "@/utils/helpers";
+import { idadeEmMeses, idadeDetalhada, faseAlimentar, formatDate, getSigno, getElementoChinês, diaDaSemana, getAlimentosDoRegistro } from "@/utils/helpers";
 import { CATEGORIA_LABELS } from "@/types";
 import type { Bebe, RegistroAlimentar } from "@/types";
 
@@ -199,12 +198,15 @@ const BebePage = () => {
   const registrosSemana = registros.filter((r) => r.data >= swStr && r.data <= ewStr);
 
   const categoriasSemana: Record<string, Set<string>> = {};
+  const aceitacoes: number[] = [];
   registrosSemana.forEach((r) => {
-    if (!categoriasSemana[r.categoria]) categoriasSemana[r.categoria] = new Set();
-    categoriasSemana[r.categoria].add(r.nome_alimento);
+    getAlimentosDoRegistro(r).forEach((a) => {
+      if (!categoriasSemana[a.categoria]) categoriasSemana[a.categoria] = new Set();
+      categoriasSemana[a.categoria].add(a.nome);
+      if (a.aceitacao) aceitacoes.push(a.aceitacao);
+    });
   });
 
-  const aceitacoes = registrosSemana.filter((r) => r.aceitacao).map((r) => r.aceitacao!);
   const mediaAceitacao = aceitacoes.length ? (aceitacoes.reduce((a, b) => a + b, 0) / aceitacoes.length).toFixed(1) : "—";
 
   const handleDelete = () => {
@@ -225,7 +227,7 @@ const BebePage = () => {
   else if (hora >= 17) proxRefeicao = "jantar";
 
   const temRegistroHoje = registrosHoje.length > 0;
-  const alimentosUnicos = new Set(registrosSemana.map(r => r.nome_alimento)).size;
+  const alimentosUnicos = new Set(registrosSemana.flatMap(r => getAlimentosDoRegistro(r).map(a => a.nome))).size;
 
   return (
     <div className="min-h-screen gradient-bg pb-20">
@@ -449,9 +451,6 @@ const BebePage = () => {
           </TabsContent>
         </Tabs>
       </main>
-
-      {/* Tips Ticker */}
-      <TipsTicker />
 
       {/* Popups */}
       <AlimentosPopup open={alimentosOpen} onClose={() => setAlimentosOpen(false)} registros={registrosSemana} />
